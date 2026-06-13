@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>체험하기 — SANJANG™ SAN場</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0a;overflow:hidden;font-family:'Space Mono',monospace;user-select:none}
+canvas{display:block;width:100vw;height:100vh}
+#topnav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;justify-content:space-between;align-items:center;padding:16px 28px;background:rgba(10,10,10,0.85);backdrop-filter:blur(12px);border-bottom:.5px solid rgba(245,244,240,.12)}
+#topnav a{font-size:11px;letter-spacing:.14em;color:rgba(245,244,240,.45);text-transform:uppercase;text-decoration:none;transition:color .2s}
+#topnav a:hover{color:#c8f03c}
+#topnav .logo{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.2em;color:#f5f4f0;display:flex;flex-direction:column;align-items:center;line-height:1}
+#topnav .logo span{font-family:'Space Mono',monospace;font-size:7px;letter-spacing:.3em;color:#c8f03c;margin-top:2px}
+#start{position:fixed;inset:0;z-index:80;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px}
+#start h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(48px,8vw,80px);color:#f5f4f0;letter-spacing:.15em}
+#start .sub{font-size:9px;letter-spacing:.25em;color:#c8f03c;text-transform:uppercase;margin:6px 0 36px}
+#start .ctrl{font-size:10px;letter-spacing:.08em;color:rgba(245,244,240,.35);line-height:2.4;margin-bottom:36px}
+#start .ctrl b{color:rgba(245,244,240,.7);letter-spacing:.14em}
+#start-btn{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#0a0a0a;background:#c8f03c;border:none;padding:14px 40px;cursor:pointer}
+#start-btn:hover{background:#d4f550}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10}
+#xhair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:14px;height:14px}
+#xhair::before,#xhair::after{content:'';position:absolute;background:rgba(20,18,15,.6)}
+#xhair::before{width:1px;height:100%;left:50%;transform:translateX(-50%)}
+#xhair::after{width:100%;height:1px;top:50%;transform:translateY(-50%)}
+#xhair.hot::before,#xhair.hot::after{background:#8aab1e}
+#progress{position:absolute;top:72px;right:24px;text-align:right;font-size:9px;letter-spacing:.18em;color:rgba(245,244,240,.45);text-transform:uppercase;line-height:1.9}
+#prog-count{font-size:22px;color:#c8f03c;display:block;letter-spacing:.05em}
+#hint{position:absolute;bottom:90px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:.18em;color:#c8f03c;text-transform:uppercase;padding:5px 14px;border:.5px solid rgba(200,240,60,.5);background:rgba(10,10,10,.75);opacity:0;transition:opacity .3s;white-space:nowrap}
+#hint.show{opacity:1}
+#flash{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;opacity:0;transition:opacity .6s;pointer-events:none}
+#flash h2{font-family:'Bebas Neue',sans-serif;font-size:clamp(36px,6vw,56px);color:#c8f03c;letter-spacing:.1em}
+#flash p{font-size:9px;letter-spacing:.2em;color:rgba(245,244,240,.8);margin-top:8px}
+.modal{position:fixed;inset:0;z-index:60;background:rgba(10,10,10,.92);display:none;align-items:center;justify-content:center;padding:20px}
+.modal.open{display:flex}
+.modal-box{background:#0a0a0a;border:.5px solid rgba(245,244,240,.12);padding:44px 40px;width:100%;max-width:500px;position:relative;max-height:85vh;overflow-y:auto}
+.modal-box .mlabel{font-size:9px;letter-spacing:.22em;color:#c8f03c;text-transform:uppercase;margin-bottom:20px}
+.modal-close{position:absolute;top:18px;right:18px;background:none;border:none;color:rgba(245,244,240,.35);font-size:16px;cursor:pointer}
+.modal-close:hover{color:#c8f03c}
+#msg-box p{font-size:15px;color:#f5f4f0;line-height:2;font-weight:300;white-space:pre-line}
+#msg-box .sig{font-size:11px;color:rgba(245,244,240,.4);margin-top:20px;letter-spacing:.1em}
+#info-box .panel-num{font-size:9px;letter-spacing:.18em;color:rgba(245,244,240,.3);margin-bottom:8px}
+#info-box .panel-title{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#f5f4f0;letter-spacing:.06em;margin-bottom:12px}
+#info-box .panel-desc{font-size:12px;color:rgba(245,244,240,.45);line-height:1.9}
+#gb-box h3{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.08em;color:#f5f4f0;margin-bottom:4px}
+#gb-box .gsub{font-size:9px;letter-spacing:.2em;color:#c8f03c;text-transform:uppercase;margin-bottom:24px}
+#gb-box input,#gb-box textarea{width:100%;background:transparent;border:.5px solid rgba(245,244,240,.18);color:#f5f4f0;font-family:'Space Mono',monospace;font-size:11px;padding:10px 14px;margin-bottom:8px;resize:none;outline:none}
+#gb-box input:focus,#gb-box textarea:focus{border-color:#c8f03c}
+#gb-box input::placeholder,#gb-box textarea::placeholder{color:rgba(245,244,240,.25)}
+#gb-box button{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.16em;color:#0a0a0a;background:#c8f03c;border:none;padding:10px 24px;cursor:pointer;text-transform:uppercase;margin-bottom:24px}
+#gb-box button:hover{background:#d4f550}
+#gb-entries{border-top:.5px solid rgba(245,244,240,.08);padding-top:18px}
+.gb-entry{margin-bottom:16px;padding-bottom:16px;border-bottom:.5px solid rgba(245,244,240,.05)}
+.gb-entry .gname{font-size:10px;letter-spacing:.12em;color:#c8f03c;margin-bottom:3px}
+.gb-entry .gmsg{font-size:12px;color:rgba(245,244,240,.65);line-height:1.7}
+.gb-entry .gdate{font-size:9px;color:rgba(245,244,240,.2);margin-top:3px}
+.gb-empty{font-size:11px;color:rgba(245,244,240,.2);padding:8px 0}
+#jleft{position:fixed;bottom:36px;left:28px;z-index:20;width:96px;height:96px;display:none}
+.joy-base{width:100%;height:100%;border-radius:50%;border:1px solid rgba(245,244,240,.18);background:rgba(10,10,10,.45);position:relative;touch-action:none}
+.joy-knob{width:34px;height:34px;border-radius:50%;background:rgba(200,240,60,.45);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
+#welcome{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:15;text-align:center;pointer-events:none;opacity:0;transition:opacity .8s ease;font-family:'Bebas Neue',sans-serif;letter-spacing:.12em;line-height:1.35;color:#f5f4f0;text-shadow:0 0 14px rgba(200,240,60,.55),0 0 36px rgba(200,240,60,.3),0 2px 24px rgba(0,0,0,.5);font-size:clamp(42px,7.8vw,84px);text-transform:uppercase;white-space:nowrap}
+#look-hint{position:fixed;bottom:148px;right:28px;font-size:9px;letter-spacing:.12em;color:rgba(245,244,240,.3);text-transform:uppercase;display:none;text-align:right;line-height:1.8}
+#jright{position:fixed;bottom:36px;right:28px;z-index:20;display:none;flex-direction:column;gap:12px;align-items:center}
+.mbtn{width:62px;height:62px;border-radius:50%;border:1px solid rgba(245,244,240,.25);background:rgba(10,10,10,.45);display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.1em;color:rgba(245,244,240,.6);text-transform:uppercase;-webkit-user-select:none;user-select:none;touch-action:none}
+.mbtn.active{background:rgba(200,240,60,.35);color:#0a0a0a;border-color:#c8f03c}
+</style>
+</head>
+<body>
+<div id="topnav">
+  <a href="hall.html">← 홀 소개</a>
+  <div class="logo">SANJANG™<span>SAN場</span></div>
+  <a href="index.html">홈 ↗</a>
+</div>
+
+<div id="start">
+  <h1>SANJANG™</h1>
+  <div class="sub">체험하기 · Gallery Walk</div>
+  <div class="ctrl">
+    <b>DESKTOP</b><br>
+    WASD — 이동 &nbsp;·&nbsp; 마우스 — 시점 &nbsp;·&nbsp; 클릭 — 감상<br><br>
+    <b>MOBILE</b><br>
+    조이스틱 — 이동 &nbsp;·&nbsp; 화면 드래그 — 시점 &nbsp;·&nbsp; 중앙 탭 — 감상<br><br>
+    모든 작품을 감상하면 EXIT가 열립니다
+  </div>
+  <button id="start-btn">입장하기 ↗</button>
+</div>
+
+<div id="hud">
+  <div id="xhair"></div>
+  <div id="progress"><span id="prog-count">0 / 6</span>작품 감상</div>
+  <div id="hint"></div>
+  <div id="flash"><h2>EXIT 해금</h2><p>출구가 열렸습니다</p></div>
+</div>
+
+<div class="modal" id="modal-info">
+  <div class="modal-box" id="info-box">
+    <button class="modal-close" id="info-close">✕</button>
+    <div class="mlabel">작품 정보 · Work Info</div>
+    <div class="panel-num" id="i-num"></div>
+    <div class="panel-title" id="i-title"></div>
+    <div class="panel-desc" id="i-desc"></div>
+  </div>
+</div>
+<div class="modal" id="modal-msg">
+  <div class="modal-box" id="msg-box">
+    <button class="modal-close" id="msg-close">✕</button>
+    <div class="mlabel">아티스트 메시지 · Artist Message</div>
+    <p>제 사이버 보금자리를 애정으로 살펴봐주셔서 감사합니다.
+항상 좋은 일 있으시길 바랍니다.</p>
+    <div class="sig">— 지산</div>
+  </div>
+</div>
+<div class="modal" id="modal-gb">
+  <div class="modal-box" id="gb-box">
+    <button class="modal-close" id="gb-close">✕</button>
+    <h3>방명록</h3>
+    <div class="gsub">Guestbook · SANJANG™</div>
+    <input id="gb-name" type="text" placeholder="이름 / 닉네임" maxlength="30">
+    <textarea id="gb-msg" placeholder="메시지를 남겨주세요" rows="3" maxlength="200"></textarea>
+    <button id="gb-submit">남기기 ↗</button>
+    <div id="gb-entries"></div>
+  </div>
+</div>
+
+<div id="jleft"><div class="joy-base"><div class="joy-knob" id="kl"></div></div></div>
+<div id="jright"><div class="mbtn" id="btn-run">RUN</div><div class="mbtn" id="btn-jump">JUMP</div></div>
+<div id="look-hint">화면 드래그<br>시점 조작</div>
+
+<div id="welcome">WELCOME TO THE<br>EXCLUSIVE GALLERY<br>OF SANJANG</div>
+<canvas id="c"></canvas>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ═══════════════════════════════════════════
+//  SANJANG™ 체험하기 — ㄷ자 콘크리트 갤러리
+//  EXIT 해금 → 시크릿룸 (디졸브)
+// ═══════════════════════════════════════════
+const isMobile=/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||window.innerWidth<768;
+
+const renderer=new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:!isMobile});
+renderer.setSize(window.innerWidth,window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,isMobile?1.5:2));
+renderer.setClearColor(0xe8e3d6);
+
+const scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0xe8e3d6,24,50);
+
+const yawObj=new THREE.Object3D();
+const pitchObj=new THREE.Object3D();
+yawObj.add(pitchObj);scene.add(yawObj);
+const camera=new THREE.PerspectiveCamera(isMobile?78:70,window.innerWidth/window.innerHeight,0.05,80);
+pitchObj.add(camera);
+
+const EYE=1.65,SPEED=3.4,ROOM_H=6.4,PR=0.32;
+function clamp(v,a,b){return Math.min(b,Math.max(a,v));}
+
+const S={started:false,locked:false,unlocked:false,viewed:new Set(),modalOpen:false};
+
+// 스폰: 서쪽 복도 입구, 북쪽(-Z)을 바라봄
+yawObj.position.set(-10.0,EYE,6.5);
+yawObj.rotation.y=0;
+
+// ── 절차적 콘크리트(아이보리) 텍스처 + 노멀맵 ──
+function concreteTex(){
+  const cv=document.createElement('canvas');cv.width=cv.height=512;
+  const c=cv.getContext('2d');
+  c.fillStyle='#e7e2d5';c.fillRect(0,0,512,512);
+  // 미세 노이즈
+  for(let i=0;i<9000;i++){
+    const x=Math.random()*512,y=Math.random()*512;
+    const g=210+Math.random()*30|0;
+    c.fillStyle='rgba('+g+','+(g-3)+','+(g-8)+',0.5)';
+    c.fillRect(x,y,1,1);
+  }
+  // 거푸집(formwork) 가로/세로 라인
+  c.strokeStyle='rgba(170,164,150,0.35)';c.lineWidth=1.5;
+  for(let y=0;y<512;y+=64){c.beginPath();c.moveTo(0,y);c.lineTo(512,y);c.stroke();}
+  for(let x=0;x<512;x+=128){c.beginPath();c.moveTo(x,0);c.lineTo(x,512);c.stroke();}
+  // 얼룩
+  for(let i=0;i<14;i++){
+    c.fillStyle='rgba(180,174,160,'+(0.04+Math.random()*0.08)+')';
+    c.beginPath();c.ellipse(Math.random()*512,Math.random()*512,30+Math.random()*70,18+Math.random()*40,Math.random()*3,0,7);c.fill();
+  }
+  const t=new THREE.CanvasTexture(cv);t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;
+}
+function normalFrom(srcTex,strength){
+  const img=srcTex.image,W=img.width,H=img.height;
+  const sc=document.createElement('canvas');sc.width=W;sc.height=H;
+  const sctx=sc.getContext('2d');sctx.drawImage(img,0,0);
+  const sd=sctx.getImageData(0,0,W,H).data;
+  function lum(x,y){x=(x+W)%W;y=(y+H)%H;const i=(y*W+x)*4;return (sd[i]*0.3+sd[i+1]*0.59+sd[i+2]*0.11)/255;}
+  const oc=document.createElement('canvas');oc.width=W;oc.height=H;
+  const octx=oc.getContext('2d');const od=octx.createImageData(W,H);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const dx=(lum(x+1,y)-lum(x-1,y))*strength;
+    const dy=(lum(x,y+1)-lum(x,y-1))*strength;
+    const inv=1/Math.sqrt(dx*dx+dy*dy+1);
+    const i=(y*W+x)*4;
+    od.data[i]=(-dx*inv*0.5+0.5)*255;od.data[i+1]=(-dy*inv*0.5+0.5)*255;od.data[i+2]=inv*255;od.data[i+3]=255;
+  }
+  octx.putImageData(od,0,0);
+  const t=new THREE.CanvasTexture(oc);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.copy(srcTex.repeat);return t;
+}
+const TEX_C=concreteTex();
+const TEX_C_N=normalFrom(TEX_C,1.8);
+
+const wallTexH=TEX_C.clone();wallTexH.repeat.set(6,1.2);wallTexH.needsUpdate=true;
+const wallNH=normalFrom(wallTexH,1.8);
+const floorTex=TEX_C.clone();floorTex.repeat.set(10,16);floorTex.needsUpdate=true;
+const floorN=normalFrom(floorTex,1.6);
+const ceilTex=TEX_C.clone();ceilTex.repeat.set(10,16);ceilTex.needsUpdate=true;
+
+const mWall =new THREE.MeshStandardMaterial({map:wallTexH,normalMap:wallNH,normalScale:new THREE.Vector2(.7,.7),color:0xeae5d8,roughness:.92});
+const mFloor=new THREE.MeshStandardMaterial({map:floorTex,normalMap:floorN,normalScale:new THREE.Vector2(.6,.6),color:0xddd7c8,roughness:.95});
+const mCeil =new THREE.MeshStandardMaterial({map:ceilTex,color:0xf1ede2,roughness:1});
+const mFrame=new THREE.MeshStandardMaterial({color:0x141210,roughness:.6});
+const mBlank=new THREE.MeshStandardMaterial({color:0x2b2926,roughness:.75});
+const mAccent=new THREE.MeshStandardMaterial({color:0xc8f03c,emissive:0x84a51e,emissiveIntensity:.8});
+const mTrack=new THREE.MeshStandardMaterial({color:0xfff3da,emissive:0xfff0c8,emissiveIntensity:1.4});
+const mPed  =new THREE.MeshStandardMaterial({color:0x1a1816,roughness:.7});
+const mPedTop=new THREE.MeshStandardMaterial({color:0x252220,roughness:.6});
+// EXIT 벽 (디졸브 대상)
+const mExit=new THREE.MeshStandardMaterial({map:wallTexH,normalMap:wallNH,color:0xeae5d8,roughness:.92,transparent:false,opacity:1});
+
+// ── 라이팅 ──
+scene.add(new THREE.AmbientLight(0xfff6ea,0.62));
+const sun=new THREE.DirectionalLight(0xfff0d8,0.42);
+sun.position.set(10,20,8);scene.add(sun);
+
+// ── 헬퍼 ──
+const cols=[];
+function addCol(x0,x1,z0,z1,locked){const c={x0,x1,z0,z1,active:true,locked:!!locked};cols.push(c);return c;}
+function box(x,y,z,w,h,d,mat){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
+  m.position.set(x,y,z);scene.add(m);return m;
+}
+function wallBox(cx,cz,w,d,mat,locked){
+  const m=box(cx,ROOM_H/2,cz,w,ROOM_H,d,mat);
+  addCol(cx-w/2,cx+w/2,cz-d/2,cz+d/2,locked);
+  return m;
+}
+
+// ── 바닥/천장 (ㄷ자 영역 3구획) ──
+function slab(cx,cz,w,d){
+  box(cx,0.0, cz,w,0.2,d,mFloor);
+  box(cx,ROOM_H,cz,w,0.2,d,mCeil);
+}
+slab(-10.0,-9.35,8.7,34.0);  // 서쪽 복도
+slab(0,-22.175,29,8.7);      // 북쪽(백 갤러리)
+slab(10.0,-9.35,8.7,34.0);   // 동쪽 복도
+slab(10.0,16.0,8.7,16.7);    // 시크릿룸 (복도 끝과 정확히 맞물림, 이음새 제거)
+
+// ── 벽 ──
+// 외곽
+wallBox(-14.175,-9.35, 0.35,34.0, mWall); // 서쪽 외벽
+wallBox(14.175,-9.35, 0.35,34.0, mWall);  // 동쪽 외벽
+wallBox(0,-26.175, 28.7,0.35, mWall);     // 북쪽 외벽
+// 내곽(중앙 보이드)
+wallBox(-5.825,-5.2625, 0.35,25.825, mWall); // 내측 서벽
+wallBox(5.825,-5.2625, 0.35,25.825, mWall);  // 내측 동벽
+wallBox(0,-18.175, 11.65,0.35, mWall);       // 내측 북벽
+wallBox(-10.0,7.825, 8.7,0.35, mWall);        // 서쪽 복도 끝 마감벽 (영구)
+
+// ── 천장 트랙 라이트 + 점광 ──
+function track(cx,cz,w,d,rot){
+  const m=box(cx,ROOM_H-0.05,cz,w,0.05,d,mTrack);
+  if(rot)m.rotation.y=Math.PI/2;
+}
+track(-10.0,-9.35,0.18,32,false);
+track(0,-22.175,26,0.18,false);
+track(10.0,-9.35,0.18,32,false);
+[-19,-9,-3].forEach(z=>{const l=new THREE.PointLight(0xfff3da,0.55,9,2);l.position.set(-10.0,ROOM_H-0.3,z);scene.add(l);});
+[-9,-3,3,9].forEach(x=>{const l=new THREE.PointLight(0xfff3da,0.6,10,2);l.position.set(x,ROOM_H-0.3,-22.175);scene.add(l);});
+[-19,-9,-3].forEach(z=>{const l=new THREE.PointLight(0xfff3da,0.55,9,2);l.position.set(10.0,ROOM_H-0.3,z);scene.add(l);});
+const secL=new THREE.PointLight(0xfff3da,0,12,2);secL.position.set(10.0,ROOM_H-0.3,16);scene.add(secL);
+
+// ── 작품 패널 ──
+const interactables=[];
+function panel(id,x,z,ry){
+  const dir=new THREE.Vector3(0,0,1).applyEuler(new THREE.Euler(0,ry,0));
+  const fr=box(x,1.65,z,2.6,2.0,0.06,mFrame);fr.rotation.y=ry;
+  const cv=box(x,1.65,z,2.2,1.65,0.08,mBlank);cv.rotation.y=ry;
+  cv.position.addScaledVector(dir,0.04);
+  const dot=new THREE.Mesh(new THREE.SphereGeometry(0.05,8,8),mAccent);
+  dot.position.copy(fr.position).addScaledVector(dir,0.07);dot.position.y+=0.9;scene.add(dot);
+  const spot=new THREE.PointLight(0xfff3da,0.45,6,2);
+  spot.position.copy(fr.position).addScaledVector(dir,1.3);spot.position.y+=1.3;scene.add(spot);
+  const hit=new THREE.Mesh(new THREE.PlaneGeometry(2.6,2.0),new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));
+  hit.position.copy(fr.position).addScaledVector(dir,0.1);hit.rotation.y=ry;scene.add(hit);
+  interactables.push({mesh:hit,type:'panel',id:id});
+}
+// 서쪽 외벽 → 동쪽(+x) 향함
+panel(1,-14.0,-3, -Math.PI/2);
+panel(2,-14.0,-13,-Math.PI/2);
+// 북쪽 외벽 → 남쪽(+z) 향함
+panel(3,-7,-26.0, Math.PI);
+panel(4, 7,-26.0, Math.PI);
+// 동쪽 외벽 → 서쪽(-x) 향함
+panel(5,14.0,-13, Math.PI/2);
+panel(6,14.0,-3,  Math.PI/2);
+
+
+// ── EXIT 벽 (디졸브 대상) ──
+const exitWall=box(10.0,ROOM_H/2,8.175,8.7,ROOM_H,1.05,mExit); // 복도 끝 마감 역할까지 포함
+const exitCol=addCol(5.825,14.175,7.65,8.7,true);
+
+// ── 시크릿룸 (EXIT 너머) ──
+wallBox(5.825,15.825,0.35,16.35, mWall);   // 서벽
+wallBox(14.175,15.825,0.35,16.35, mWall);  // 동벽
+wallBox(10.0,24.175,8.7,0.35, mWall); // 남벽(끝)
+
+function pedestal(x,z,type){
+  const W=0.9,H=0.95,D=0.65;
+  box(x,H/2,z,W,H,D,mPed);
+  box(x,H+0.04,z,W+0.06,0.08,D+0.06,mPedTop);
+  box(x,H*0.55,z-D/2-0.01,W,0.04,0.04,mAccent);
+  const glow=new THREE.Mesh(new THREE.BoxGeometry(0.18,0.18,0.18),mAccent);
+  glow.position.set(x,H+0.2,z);scene.add(glow);
+  const hit=new THREE.Mesh(new THREE.PlaneGeometry(1.3,1.5),new THREE.MeshBasicMaterial({visible:false,side:THREE.DoubleSide}));
+  hit.position.set(x,H/2+0.3,z-D/2-0.4);scene.add(hit);
+  interactables.push({mesh:hit,type:type,id:type});
+  return glow;
+}
+const glowL=pedestal(10.0,13.5,'message');
+const glowR=pedestal(10.0,20,'guestbook');
+
+// ── 충돌 ──
+function isBlocked(x,z){
+  for(const c of cols){if(!c.active)continue;
+    if(x+PR>c.x0&&x-PR<c.x1&&z+PR>c.z0&&z-PR<c.z1)return true;}
+  return false;
+}
+
+// ── 조작 ──
+const keys={};
+window.addEventListener('keydown',e=>{
+  if(e.code==='KeyZ'&&!keys['KeyZ']&&S.started){
+    if(S.modalOpen){closeModals();if(!isMobile)renderer.domElement.requestPointerLock();}
+    else handleInteract();
+  }
+  keys[e.code]=true;if(e.code==='Escape')closeModals();
+});
+window.addEventListener('keyup',e=>{keys[e.code]=false;});
+document.addEventListener('pointerlockchange',()=>{
+  S.locked=document.pointerLockElement===renderer.domElement;
+});
+document.addEventListener('mousemove',e=>{
+  if(!S.locked||!S.started||S.modalOpen)return;
+  yawObj.rotation.y-=e.movementX*0.0021;
+  pitchObj.rotation.x=clamp(pitchObj.rotation.x-e.movementY*0.0021,-1.1,0.85);
+});
+renderer.domElement.addEventListener('click',()=>{
+  if(!S.started||S.modalOpen)return;
+  if(!S.locked&&!isMobile){renderer.domElement.requestPointerLock();return;}
+  if(!isMobile)handleInteract();
+});
+
+// 모바일
+const joyMove={x:0,y:0};
+function initJoy(el,knob,out){
+  el.style.display='block';let tid=null;
+  el.addEventListener('touchstart',e=>{e.preventDefault();tid=e.changedTouches[0].identifier;upd(e.changedTouches[0]);},{passive:false});
+  el.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches)if(t.identifier===tid)upd(t);},{passive:false});
+  el.addEventListener('touchend',e=>{for(const t of e.changedTouches)if(t.identifier===tid){tid=null;out.x=0;out.y=0;knob.style.transform='translate(-50%,-50%)';}});
+  function upd(t){
+    const r=el.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+    const dx=t.clientX-cx,dy=t.clientY-cy,max=r.width/2-17,dist=Math.hypot(dx,dy)||1,cl=Math.min(dist,max);
+    const nx=dx/dist*cl,ny=dy/dist*cl;
+    out.x=nx/max;out.y=ny/max;
+    knob.style.transform='translate(calc(-50% + '+nx+'px),calc(-50% + '+ny+'px))';
+  }
+}
+let lookTouch=null,tapInfo=null;
+function setupMobileTouch(){
+  renderer.domElement.addEventListener('touchstart',e=>{
+    if(S.modalOpen||!S.started)return;
+    for(const t of e.changedTouches){
+      const jl=document.getElementById('jleft').getBoundingClientRect();
+      const onJoy=t.clientX>=jl.left&&t.clientX<=jl.right&&t.clientY>=jl.top&&t.clientY<=jl.bottom;
+      if(!onJoy&&!lookTouch){lookTouch={id:t.identifier,x:t.clientX,y:t.clientY};tapInfo={x:t.clientX,y:t.clientY,time:Date.now(),moved:false};break;}
+    }
+  },{passive:true});
+  renderer.domElement.addEventListener('touchmove',e=>{
+    if(!lookTouch)return;
+    for(const t of e.changedTouches){
+      if(t.identifier===lookTouch.id){
+        const dx=t.clientX-lookTouch.x,dy=t.clientY-lookTouch.y;
+        if(Math.abs(dx)+Math.abs(dy)>4&&tapInfo)tapInfo.moved=true;
+        yawObj.rotation.y-=dx*0.005;
+        pitchObj.rotation.x=clamp(pitchObj.rotation.x-dy*0.005,-1.1,0.85);
+        lookTouch.x=t.clientX;lookTouch.y=t.clientY;
+      }
+    }
+  },{passive:true});
+  renderer.domElement.addEventListener('touchend',e=>{
+    if(!lookTouch)return;
+    for(const t of e.changedTouches){
+      if(t.identifier===lookTouch.id){
+        lookTouch=null;
+        if(tapInfo&&!tapInfo.moved&&Date.now()-tapInfo.time<280){
+          const cx=window.innerWidth/2,cy=window.innerHeight/2;
+          if(Math.hypot(tapInfo.x-cx,tapInfo.y-cy)<80&&!S.modalOpen)handleInteract();
+        }
+        tapInfo=null;
+      }
+    }
+  },{passive:true});
+}
+
+// ── 이동 (Shift 달리기 / Space 점프) ──
+let velY=0, onGround=true;
+const JUMP_V=4.6, GRAVITY=12.5;
+let mobileRun=false, mobileJump=false;
+function movePlayer(dt){
+  if(!S.started||S.modalOpen)return;
+  const vel=new THREE.Vector3();
+  if(keys['KeyW']||keys['ArrowUp'])vel.z-=1;
+  if(keys['KeyS']||keys['ArrowDown'])vel.z+=1;
+  if(keys['KeyA']||keys['ArrowLeft'])vel.x-=1;
+  if(keys['KeyD']||keys['ArrowRight'])vel.x+=1;
+  vel.x+=joyMove.x;vel.z+=joyMove.y;
+
+  const running=keys['ShiftLeft']||keys['ShiftRight']||mobileRun;
+  const spd=SPEED*(running?3:1);
+
+  if(vel.lengthSq()>0.0009){
+    vel.normalize().multiplyScalar(spd*dt);
+    vel.applyEuler(new THREE.Euler(0,yawObj.rotation.y,0));
+    const np=yawObj.position;
+    if(!isBlocked(np.x+vel.x,np.z))np.x+=vel.x;
+    if(!isBlocked(np.x,np.z+vel.z))np.z+=vel.z;
+  }
+
+  // 점프
+  if((keys['Space']||mobileJump)&&onGround){
+    velY=JUMP_V;onGround=false;mobileJump=false;
+  }
+  if(!onGround){
+    velY-=GRAVITY*dt;
+    yawObj.position.y+=velY*dt;
+    if(yawObj.position.y<=EYE){yawObj.position.y=EYE;velY=0;onGround=true;}
+  }
+}
+
+// ── 레이캐스트 ──
+const raycaster=new THREE.Raycaster();
+const CENTER=new THREE.Vector2(0,0);
+let focusTarget=null;
+function castRay(){
+  raycaster.setFromCamera(CENTER,camera);
+  const hits=raycaster.intersectObjects(interactables.map(i=>i.mesh));
+  focusTarget=(hits.length>0&&hits[0].distance<5.5)?interactables.find(i=>i.mesh===hits[0].object)||null:null;
+}
+
+// ── 상호작용 ──
+function handleInteract(){
+  if(!focusTarget)return;
+  const t=focusTarget;
+  if(t.type==='panel'){
+    if(!S.viewed.has(t.id)){S.viewed.add(t.id);updateProgress();
+      if(S.viewed.size===6&&!S.unlocked)unlockExit();}
+    document.getElementById('i-num').textContent='No.'+String(t.id).padStart(2,'0')+' · 2025–2026';
+    document.getElementById('i-title').textContent='작품 '+t.id;
+    document.getElementById('i-desc').textContent='이 전시물은 준비 중입니다.\nComing soon.';
+    openModal('modal-info');
+  }else if(t.type==='message'){openModal('modal-msg');}
+  else if(t.type==='guestbook'){renderGB();openModal('modal-gb');}
+}
+
+// ── EXIT 해금: 디졸브 ──
+function unlockExit(){
+  S.unlocked=true;
+  exitWall.material.transparent=true;
+  let op=1;
+  (function step(){
+    op-=0.018;
+    exitWall.material.opacity=Math.max(op,0);
+    if(op>0){requestAnimationFrame(step);}
+    else{scene.remove(exitWall);exitCol.active=false;secL.intensity=0.6;}
+  })();
+  const fl=document.getElementById('flash');
+  fl.style.opacity='1';setTimeout(()=>{fl.style.opacity='0';},3000);
+}
+
+function updateProgress(){document.getElementById('prog-count').textContent=S.viewed.size+' / 6';}
+function openModal(id){
+  if(!isMobile)document.exitPointerLock();
+  document.getElementById(id).classList.add('open');S.modalOpen=true;
+}
+function closeModals(){
+  document.querySelectorAll('.modal').forEach(m=>m.classList.remove('open'));
+  S.modalOpen=false;
+}
+document.getElementById('info-close').addEventListener('click',closeModals);
+document.getElementById('msg-close').addEventListener('click',closeModals);
+document.getElementById('gb-close').addEventListener('click',closeModals);
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModals();}));
+
+// ── 방명록 ──
+const GB_KEY='sanjang_gb_v1';
+function getGB(){return JSON.parse(localStorage.getItem(GB_KEY)||'[]');}
+function esc(s){return s.replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]||c));}
+function renderGB(){
+  const e=getGB(),el=document.getElementById('gb-entries');
+  el.innerHTML=e.length?e.map(x=>'<div class="gb-entry"><div class="gname">'+esc(x.name)+'</div><div class="gmsg">'+esc(x.msg)+'</div><div class="gdate">'+x.date+'</div></div>').join(''):'<div class="gb-empty">아직 방명록이 없습니다.</div>';
+}
+document.getElementById('gb-submit').addEventListener('click',()=>{
+  const n=document.getElementById('gb-name').value.trim(),m=document.getElementById('gb-msg').value.trim();
+  if(!n||!m)return;
+  const e=getGB();e.unshift({name:n,msg:m,date:new Date().toLocaleDateString('ko-KR')});
+  localStorage.setItem(GB_KEY,JSON.stringify(e.slice(0,80)));
+  document.getElementById('gb-name').value='';document.getElementById('gb-msg').value='';
+  renderGB();
+});
+
+// ── HUD ──
+const hintEl=document.getElementById('hint'),xhairEl=document.getElementById('xhair');
+function updateHint(){
+  if(S.modalOpen){hintEl.classList.remove('show');xhairEl.className='';return;}
+  if(focusTarget){
+    hintEl.textContent={panel:'클릭하여 감상',message:'아티스트 메시지',guestbook:'방명록 남기기'}[focusTarget.type]||'';
+    hintEl.classList.add('show');xhairEl.className='hot';
+  }else{hintEl.classList.remove('show');xhairEl.className='';}
+}
+
+// ── 시작 ──
+document.getElementById('start-btn').addEventListener('click',()=>{
+  document.getElementById('start').style.display='none';
+  S.started=true;
+  const wel=document.getElementById('welcome');
+  wel.style.opacity='1';
+  setTimeout(()=>{wel.style.transition='opacity 4s ease';wel.style.opacity='0';},4000);
+  setTimeout(()=>{wel.style.display='none';},8000);
+  if(isMobile){
+    initJoy(document.getElementById('jleft'),document.getElementById('kl'),joyMove);
+    document.getElementById('xhair').style.display='none';
+    document.getElementById('look-hint').style.display='block';
+    document.getElementById('jright').style.display='flex';
+    const btnRun=document.getElementById('btn-run'), btnJump=document.getElementById('btn-jump');
+    btnRun.addEventListener('touchstart',e=>{e.preventDefault();mobileRun=true;btnRun.classList.add('active');},{passive:false});
+    btnRun.addEventListener('touchend',e=>{e.preventDefault();mobileRun=false;btnRun.classList.remove('active');},{passive:false});
+    btnJump.addEventListener('touchstart',e=>{e.preventDefault();mobileJump=true;btnJump.classList.add('active');setTimeout(()=>btnJump.classList.remove('active'),150);},{passive:false});
+    setupMobileTouch();
+  }else{
+    renderer.domElement.requestPointerLock();
+  }
+});
+
+// ── 루프 ──
+const clock=new THREE.Clock();let t=0;
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),0.05);t+=dt;
+  movePlayer(dt);castRay();updateHint();
+  const p=0.7+0.3*Math.sin(t*2.5);
+  glowL.scale.setScalar(p);glowR.scale.setScalar(p);
+  renderer.render(scene,camera);
+}
+window.addEventListener('resize',()=>{
+  camera.aspect=window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+});
+animate();
+</script>
+</body>
+</html>
